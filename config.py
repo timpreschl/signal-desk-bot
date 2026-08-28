@@ -10,15 +10,29 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+def _get_int(name: str, default: int) -> int:
+    # GitHub Actions setzt eine nicht konfigurierte "vars.X" als LEEREN String,
+    # nicht als fehlende Variable -- os.getenv()'s eigener Default greift dann
+    # NICHT (die Variable ist ja technisch gesetzt). Deshalb hier explizit auf
+    # leeren/fehlenden Wert pruefen, bevor wir konvertieren.
+    val = os.getenv(name, "").strip()
+    return int(val) if val else default
+
+
+def _get_float(name: str, default: float) -> float:
+    val = os.getenv(name, "").strip()
+    return float(val) if val else default
+
+
 @dataclass(frozen=True)
 class Settings:
     alpaca_api_key: str = os.getenv("ALPACA_API_KEY", "")
     alpaca_secret_key: str = os.getenv("ALPACA_SECRET_KEY", "")
     alpaca_base_url: str = os.getenv("ALPACA_BASE_URL", "https://paper-api.alpaca.markets")
 
-    max_open_positions: int = int(os.getenv("MAX_OPEN_POSITIONS", "5"))
-    risk_per_trade_pct: float = float(os.getenv("RISK_PER_TRADE_PCT", "1.0"))
-    max_daily_loss_pct: float = float(os.getenv("MAX_DAILY_LOSS_PCT", "3.0"))
+    max_open_positions: int = _get_int("MAX_OPEN_POSITIONS", 5)
+    risk_per_trade_pct: float = _get_float("RISK_PER_TRADE_PCT", 1.0)
+    max_daily_loss_pct: float = _get_float("MAX_DAILY_LOSS_PCT", 3.0)
 
     def is_paper(self) -> bool:
         return "paper-api" in self.alpaca_base_url
