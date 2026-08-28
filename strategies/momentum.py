@@ -30,7 +30,15 @@ class RelativeMomentumStrategy(Strategy):
         momentum = closes.pct_change(self.lookback_days)
 
         # Nur an Rebalance-Terminen (z.B. Monatsende) neu entscheiden, dazwischen halten.
-        rebalance_dates = closes.resample(self.rebalance).last().index
+        #
+        # WICHTIG: closes.resample(...).last().index liefert KALENDER-Label (z.B. "2026-08-31"),
+        # nicht den tatsaechlich letzten Handelstag des Monats -- faellt der Kalender-Monatsletzte
+        # auf ein Wochenende (die meisten Monate!), taucht dieses Label NIE in closes.index auf,
+        # und der Rebalance wird fuer diesen Monat komplett uebersprungen. Deshalb hier stattdessen
+        # die DATEN-Werte selbst resamplen (nicht die Kurse) -- .last() liefert dann den echten
+        # letzten tatsaechlich vorhandenen Handelstag pro Periode.
+        real_dates = pd.Series(closes.index, index=closes.index)
+        rebalance_dates = pd.DatetimeIndex(real_dates.resample(self.rebalance).last().dropna())
         signals = pd.DataFrame(0.0, index=closes.index, columns=closes.columns)
 
         current_weights = pd.Series(0.0, index=closes.columns)
