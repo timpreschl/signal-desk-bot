@@ -33,11 +33,18 @@ class AlpacaDataLoader:
         from alpaca.data.historical import StockHistoricalDataClient
         from alpaca.data.requests import StockBarsRequest
         from alpaca.data.timeframe import TimeFrame
+        from alpaca.data.enums import DataFeed
 
         settings.validate()
         self._client = StockHistoricalDataClient(settings.alpaca_api_key, settings.alpaca_secret_key)
         self._TimeFrame = TimeFrame
         self._StockBarsRequest = StockBarsRequest
+        # Kostenlose Alpaca-Accounts duerfen nur den IEX-Feed abfragen, nicht den
+        # vollen SIP-Konsolidierungsfeed (der ist kostenpflichtig) -- ohne dieses
+        # Flag schlaegt jede Anfrage mit "subscription does not permit querying
+        # recent SIP data" fehl. IEX deckt trotzdem alle liquiden NASDAQ-Werte
+        # aus unserer Watchlist gut ab.
+        self._feed = DataFeed.IEX
 
     def load(self, symbol: str, start: str, end: str) -> pd.DataFrame:
         request = self._StockBarsRequest(
@@ -45,6 +52,7 @@ class AlpacaDataLoader:
             timeframe=self._TimeFrame.Day,
             start=start,
             end=end,
+            feed=self._feed,
         )
         bars = self._client.get_stock_bars(request).df
         bars = bars.reset_index().set_index("timestamp")
