@@ -1,0 +1,29 @@
+name: Signal Desk Taeglicher Bot-Lauf
+
+on:
+  schedule:
+    - cron: "40 13 * * 1-5"
+  workflow_dispatch: {}
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: pip install -r requirements.txt
+
+      - name: Bot-Lauf
+        env:
+          ALPACA_API_KEY: ${{ secrets.ALPACA_API_KEY }}
+          ALPACA_SECRET_KEY: ${{ secrets.ALPACA_SECRET_KEY }}
+          ALPACA_BASE_URL: ${{ secrets.ALPACA_BASE_URL }}
+          MAX_OPEN_POSITIONS: ${{ vars.MAX_OPEN_POSITIONS }}
+          RISK_PER_TRADE_PCT: ${{ vars.RISK_PER_TRADE_PCT }}
+          MAX_DAILY_LOSS_PCT: ${{ vars.MAX_DAILY_LOSS_PCT }}
+        run: python run_daily.py
